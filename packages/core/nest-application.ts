@@ -16,11 +16,7 @@ import { INestExpressApplication } from '@nestjs/common/interfaces/nest-express-
 import { INestFastifyApplication } from '@nestjs/common/interfaces/nest-fastify-application.interface';
 import { Logger } from '@nestjs/common/services/logger.service';
 import { loadPackage } from '@nestjs/common/utils/load-package.util';
-import {
-  isFunction,
-  isObject,
-  validatePath,
-} from '@nestjs/common/utils/shared.utils';
+import { isFunction, isObject } from '@nestjs/common/utils/shared.utils';
 import * as bodyParser from 'body-parser';
 import * as cors from 'cors';
 import * as http from 'http';
@@ -190,9 +186,7 @@ export class NestApplication extends NestApplicationContext
 
   public async registerRouter() {
     await this.registerMiddleware(this.httpAdapter);
-    const prefix = this.config.getGlobalPrefix();
-    const basePath = prefix ? validatePath(prefix) : '';
-    this.routesResolver.resolve(this.httpAdapter, basePath);
+    this.routesResolver.resolve(this.httpAdapter);
   }
 
   public async registerRouterHooks() {
@@ -324,14 +318,17 @@ export class NestApplication extends NestApplicationContext
     await super.close();
   }
 
-  public setGlobalPrefix(prefix: string, globalPrefixConfig?: { exclude: Array<string | RouteInfo> }): this {
+  public setGlobalPrefix(
+    prefix: string,
+    globalPrefixConfig?: { exclude: Array<string | RouteInfo> },
+  ): this {
     this.config.setGlobalPrefix(prefix);
     if (globalPrefixConfig) {
       const routeInfos = globalPrefixConfig.exclude.map(route =>
         this.routesMapper.mapRouteToRouteInfo(route),
       );
       const excludedRoutes = routeInfos.reduce((a, b) => a.concat(b));
-      this.config.setGlobalPrefixConfig({exclude: excludedRoutes});
+      this.config.setGlobalPrefixConfig({ exclude: excludedRoutes });
     }
     return this;
   }

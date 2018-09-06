@@ -30,6 +30,12 @@ export interface RoutePathProperties {
   methodName: string;
 }
 
+export interface PathParts {
+  base: string;
+  prefix?: string;
+  path: string;
+}
+
 export class RouterExplorer {
   private readonly executionContextCreator: RouterExecutionContext;
   private readonly routerMethodFactory = new RouterMethodFactory();
@@ -56,31 +62,64 @@ export class RouterExplorer {
 
   public explore(
     instance: Controller,
-    metatype: Type<Controller>,
     module: string,
     appInstance,
-    basePath: string,
+    pathParts: PathParts,
   ) {
-    const {exclude: excludedRoutes} = this.config.getGlobalPrefixConfig();
-    const routerPaths = this.scanForPaths(instance)
-      .filter(({ path, requestMethod: method }) => !this.isRouteExcluded(excludedRoutes, {path, method}));
-    this.applyPathsToRouterProxy(
-      appInstance,
-      routerPaths,
+    const {
+      exclude: prefixExcludedRoutes,
+    } = this.config.getGlobalPrefixConfig();
+    const { prefixedRoutes, noPrefixedRoutes } = this.scanForPaths(
       instance,
-      module,
-      basePath,
+    ).reduce(
+      (acc, route) => {
+        const routeInfo: RouteInfo = {
+          path: route.path,
+          method: route.requestMethod,
+        };
+        const shouldPrefix = this.isRouteExcluded(
+          prefixExcludedRoutes,
+          routeInfo,
+        );
+        if (shouldPrefix) acc.prefixedRoutes.push(route);
+        else acc.noPrefixedRoutes.push(route);
+        return acc;
+      },
+      { prefixedRoutes: [], noPrefixedRoutes: [] },
     );
+    if (prefixedRoutes.length > 0) {
+      const path = pathParts.base + (pathParts.prefix || '') + pathParts.path;
+      this.applyPathsToRouterProxy(
+        appInstance,
+        prefixedRoutes,
+        instance,
+        module,
+        this.validateRoutePath(path),
+      );
+    }
+    if (noPrefixedRoutes.length > 0) {
+      const path = pathParts.base + pathParts.path;
+      this.applyPathsToRouterProxy(
+        appInstance,
+        noPrefixedRoutes,
+        instance,
+        module,
+        this.validateRoutePath(path),
+      );
+    }
   }
 
-  private isRouteExcluded(excludedRoutes: RouteInfo[], routeInfo: RouteInfo): boolean {
+  private isRouteExcluded(
+    prefixExcludedRoutes: RouteInfo[],
+    routeInfo: RouteInfo,
+  ): boolean {
     const pathLastIndex = routeInfo.path.length - 1;
     const validatedRoutePath =
       routeInfo.path[pathLastIndex] === '/'
         ? routeInfo.path.slice(0, pathLastIndex)
         : routeInfo.path;
 
-    return excludedRoutes.some(excluded => {
+    return prefixExcludedRoutes.some(excluded => {
       const isPathEqual = validatedRoutePath === excluded.path;
       if (!isPathEqual) {
         return false;
@@ -94,11 +133,13 @@ export class RouterExplorer {
 
   public extractRouterPath(
     metatype: Type<Controller>,
-    prefix?: string,
-  ): string {
-    let path = Reflect.getMetadata(PATH_METADATA, metatype);
-    if (prefix) path = prefix + this.validateRoutePath(path);
-    return this.validateRoutePath(path);
+    base?: string,
+  ): PathParts {
+    const prefix = this.validateRoutePath(this.config.getGlobalPrefix());
+    const path = this.validateRoutePath(
+      Reflect.getMetadata(PATH_METADATA, metatype),
+    );
+    return { base, prefix, path };
   }
 
   public validateRoutePath(path: string): string {

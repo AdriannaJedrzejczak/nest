@@ -9,7 +9,7 @@ import { InstanceWrapper, NestContainer } from '../injector/container';
 import { MetadataScanner } from '../metadata-scanner';
 import { Resolver } from './interfaces/resolver.interface';
 import { RouterExceptionFilters } from './router-exception-filters';
-import { RouterExplorer } from './router-explorer';
+import { RouterExplorer, PathParts } from './router-explorer';
 import { RouterProxy } from './router-proxy';
 
 export class RoutesResolver implements Resolver {
@@ -36,14 +36,14 @@ export class RoutesResolver implements Resolver {
     );
   }
 
-  public resolve(appInstance, basePath: string) {
+  public resolve(appInstance) {
     const modules = this.container.getModules();
     modules.forEach(({ routes, metatype }, moduleName) => {
-      let path = metatype
+      const metaPath = metatype
         ? Reflect.getMetadata(MODULE_PATH, metatype)
         : undefined;
-      path = path ? path + basePath : basePath;
-      this.registerRouters(routes, moduleName, path, appInstance);
+      const basePath = metaPath ? metaPath : '';
+      this.registerRouters(routes, moduleName, basePath, appInstance);
     });
   }
 
@@ -54,17 +54,13 @@ export class RoutesResolver implements Resolver {
     appInstance: HttpServer,
   ) {
     routes.forEach(({ instance, metatype }) => {
-      const path = this.routerBuilder.extractRouterPath(metatype, basePath);
-      const controllerName = metatype.name;
-
-      this.logger.log(controllerMappingMessage(controllerName, path));
-      this.routerBuilder.explore(
-        instance,
+      const pathParts = this.routerBuilder.extractRouterPath(
         metatype,
-        moduleName,
-        appInstance,
-        path,
+        basePath,
       );
+      const controllerName = metatype.name;
+      this.logger.log(controllerMappingMessage(controllerName, pathParts.path));
+      this.routerBuilder.explore(instance, moduleName, appInstance, pathParts);
     });
   }
 

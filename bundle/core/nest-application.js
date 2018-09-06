@@ -17,6 +17,7 @@ const container_1 = require("./middleware/container");
 const middleware_module_1 = require("./middleware/middleware-module");
 const nest_application_context_1 = require("./nest-application-context");
 const routes_resolver_1 = require("./router/routes-resolver");
+const routes_mapper_1 = require("./middleware/routes-mapper");
 const { SocketModule } = optional('@nestjs/websockets/socket-module') || {};
 const { MicroservicesModule } = optional('@nestjs/microservices/microservices-module') || {};
 const { IoAdapter } = optional('@nestjs/websockets/adapters/io-adapter') || {};
@@ -38,6 +39,7 @@ class NestApplication extends nest_application_context_1.NestApplicationContext 
         this.applyOptions();
         this.selectContextModule();
         this.registerHttpServer();
+        this.routesMapper = new routes_mapper_1.RoutesMapper(this.container);
         this.routesResolver = new routes_resolver_1.RoutesResolver(this.container, this.config);
     }
     getHttpAdapter() {
@@ -124,9 +126,7 @@ class NestApplication extends nest_application_context_1.NestApplicationContext 
     }
     async registerRouter() {
         await this.registerMiddleware(this.httpAdapter);
-        const prefix = this.config.getGlobalPrefix();
-        const basePath = prefix ? shared_utils_1.validatePath(prefix) : '';
-        this.routesResolver.resolve(this.httpAdapter, basePath);
+        this.routesResolver.resolve(this.httpAdapter);
     }
     async registerRouterHooks() {
         this.routesResolver.registerNotFoundHandler();
@@ -219,8 +219,13 @@ class NestApplication extends nest_application_context_1.NestApplicationContext 
         }));
         await super.close();
     }
-    setGlobalPrefix(prefix) {
+    setGlobalPrefix(prefix, globalPrefixConfig) {
         this.config.setGlobalPrefix(prefix);
+        if (globalPrefixConfig) {
+            const routeInfos = globalPrefixConfig.exclude.map(route => this.routesMapper.mapRouteToRouteInfo(route));
+            const excludedRoutes = routeInfos.reduce((a, b) => a.concat(b));
+            this.config.setGlobalPrefixConfig({ exclude: excludedRoutes });
+        }
         return this;
     }
     useWebSocketAdapter(adapter) {

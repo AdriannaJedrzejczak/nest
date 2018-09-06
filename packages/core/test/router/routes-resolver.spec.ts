@@ -28,8 +28,8 @@ describe('RoutesResolver', () => {
     container = {
       getModules: () => modules,
       getApplicationRef: () => ({
-        use: () => ({})
-      })
+        use: () => ({}),
+      }),
     };
     router = {
       get() {},
@@ -38,10 +38,7 @@ describe('RoutesResolver', () => {
   });
 
   beforeEach(() => {
-    routesResolver = new RoutesResolver(
-      container,
-      new ApplicationConfig(),
-    );
+    routesResolver = new RoutesResolver(container, new ApplicationConfig());
   });
 
   describe('registerRouters', () => {
@@ -54,20 +51,27 @@ describe('RoutesResolver', () => {
       routes.set('TestRoute', routeWrapper);
 
       const appInstance = new ExpressAdapter(router);
-      const exploreSpy = sinon.spy((routesResolver as any).routerBuilder, 'explore');
+      const exploreSpy = sinon.spy(
+        (routesResolver as any).routerBuilder,
+        'explore',
+      );
       const moduleName = '';
 
-      sinon.stub((routesResolver as any).routerBuilder, 'extractRouterPath').callsFake(() => '');
+      sinon
+        .stub((routesResolver as any).routerBuilder, 'extractRouterPath')
+        .callsFake(() => '');
       routesResolver.registerRouters(routes, moduleName, '', appInstance);
 
       expect(exploreSpy.called).to.be.true;
-      expect(exploreSpy.calledWith(
-        routeWrapper.instance,
-        routeWrapper.metatype,
-        moduleName,
-        appInstance,
-        '',
-      )).to.be.true;
+      expect(
+        exploreSpy.calledWith(
+          routeWrapper.instance,
+          routeWrapper.metatype,
+          moduleName,
+          appInstance,
+          '',
+        ),
+      ).to.be.true;
     });
   });
 
@@ -84,10 +88,7 @@ describe('RoutesResolver', () => {
       const spy = sinon
         .stub(routesResolver, 'registerRouters')
         .callsFake(() => undefined);
-      routesResolver.resolve(
-        { use: sinon.spy() } as any,
-        { use: sinon.spy() } as any,
-      );
+      routesResolver.resolve({ use: sinon.spy() } as any);
       expect(spy.calledTwice).to.be.true;
     });
   });

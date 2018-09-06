@@ -13,6 +13,11 @@ export interface RoutePathProperties {
     targetCallback: RouterProxyCallback;
     methodName: string;
 }
+export interface PathParts {
+    base: string;
+    prefix?: string;
+    path: string;
+}
 export declare class RouterExplorer {
     private readonly metadataScanner;
     private readonly routerProxy;
@@ -22,8 +27,9 @@ export declare class RouterExplorer {
     private readonly routerMethodFactory;
     private readonly logger;
     constructor(metadataScanner: MetadataScanner, container: NestContainer, routerProxy?: RouterProxy, exceptionsFilter?: ExceptionsFilter, config?: ApplicationConfig);
-    explore(instance: Controller, metatype: Type<Controller>, module: string, appInstance: any, basePath: string): void;
-    extractRouterPath(metatype: Type<Controller>, prefix?: string): string;
+    explore(instance: Controller, module: string, appInstance: any, pathParts: PathParts): void;
+    private isRouteExcluded(prefixExcludedRoutes, routeInfo);
+    extractRouterPath(metatype: Type<Controller>, base?: string): PathParts;
     validateRoutePath(path: string): string;
     scanForPaths(instance: Controller, prototype?: any): RoutePathProperties[];
     exploreMethodMetadata(instance: Controller, instancePrototype: any, methodName: string): RoutePathProperties;

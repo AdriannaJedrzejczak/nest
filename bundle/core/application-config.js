@@ -8,12 +8,19 @@ class ApplicationConfig {
         this.globalInterceptors = [];
         this.globalGuards = [];
         this.globalPrefix = '';
+        this.globalPrefixConfig = { exclude: [] };
     }
     setGlobalPrefix(prefix) {
         this.globalPrefix = prefix;
     }
     getGlobalPrefix() {
         return this.globalPrefix;
+    }
+    setGlobalPrefixConfig(globalPrefixConfig) {
+        this.globalPrefixConfig = globalPrefixConfig;
+    }
+    getGlobalPrefixConfig() {
+        return this.globalPrefixConfig;
     }
     setIoAdapter(ioAdapter) {
         this.ioAdapter = ioAdapter;

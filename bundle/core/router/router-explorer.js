@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const constants_1 = require("@nestjs/common/constants");
+const request_method_enum_1 = require("@nestjs/common/enums/request-method.enum");
 const logger_service_1 = require("@nestjs/common/services/logger.service");
 const shared_utils_1 = require("@nestjs/common/utils/shared.utils");
 require("reflect-metadata");
@@ -25,15 +26,47 @@ class RouterExplorer {
         this.logger = new logger_service_1.Logger(RouterExplorer.name, true);
         this.executionContextCreator = new router_execution_context_1.RouterExecutionContext(new route_params_factory_1.RouteParamsFactory(), new pipes_context_creator_1.PipesContextCreator(container, config), new pipes_consumer_1.PipesConsumer(), new guards_context_creator_1.GuardsContextCreator(container, config), new guards_consumer_1.GuardsConsumer(), new interceptors_context_creator_1.InterceptorsContextCreator(container, config), new interceptors_consumer_1.InterceptorsConsumer(), container.getApplicationRef());
     }
-    explore(instance, metatype, module, appInstance, basePath) {
-        const routerPaths = this.scanForPaths(instance);
-        this.applyPathsToRouterProxy(appInstance, routerPaths, instance, module, basePath);
+    explore(instance, module, appInstance, pathParts) {
+        const { exclude: prefixExcludedRoutes, } = this.config.getGlobalPrefixConfig();
+        const { prefixedRoutes, noPrefixedRoutes } = this.scanForPaths(instance).reduce((acc, route) => {
+            const routeInfo = {
+                path: route.path,
+                method: route.requestMethod,
+            };
+            const shouldPrefix = this.isRouteExcluded(prefixExcludedRoutes, routeInfo);
+            if (shouldPrefix)
+                acc.prefixedRoutes.push(route);
+            else
+                acc.noPrefixedRoutes.push(route);
+            return acc;
+        }, { prefixedRoutes: [], noPrefixedRoutes: [] });
+        if (prefixedRoutes.length > 0) {
+            const path = pathParts.base + (pathParts.prefix || '') + pathParts.path;
+            this.applyPathsToRouterProxy(appInstance, prefixedRoutes, instance, module, this.validateRoutePath(path));
+        }
+        if (noPrefixedRoutes.length > 0) {
+            const path = pathParts.base + pathParts.path;
+            this.applyPathsToRouterProxy(appInstance, noPrefixedRoutes, instance, module, this.validateRoutePath(path));
+        }
     }
-    extractRouterPath(metatype, prefix) {
-        let path = Reflect.getMetadata(constants_1.PATH_METADATA, metatype);
-        if (prefix)
-            path = prefix + this.validateRoutePath(path);
-        return this.validateRoutePath(path);
+    isRouteExcluded(prefixExcludedRoutes, routeInfo) {
+        const pathLastIndex = routeInfo.path.length - 1;
+        const validatedRoutePath = routeInfo.path[pathLastIndex] === '/'
+            ? routeInfo.path.slice(0, pathLastIndex)
+            : routeInfo.path;
+        return prefixExcludedRoutes.some(excluded => {
+            const isPathEqual = validatedRoutePath === excluded.path;
+            if (!isPathEqual) {
+                return false;
+            }
+            return (routeInfo.method === excluded.method ||
+                excluded.method === request_method_enum_1.RequestMethod.ALL);
+        });
+    }
+    extractRouterPath(metatype, base) {
+        const prefix = this.validateRoutePath(this.config.getGlobalPrefix());
+        const path = this.validateRoutePath(Reflect.getMetadata(constants_1.PATH_METADATA, metatype));
+        return { base, prefix, path };
     }
     validateRoutePath(path) {
         if (shared_utils_1.isUndefined(path)) {

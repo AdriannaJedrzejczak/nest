@@ -17,22 +17,22 @@ class RoutesResolver {
         this.routerExceptionsFilter = new router_exception_filters_1.RouterExceptionFilters(container, config, container.getApplicationRef());
         this.routerBuilder = new router_explorer_1.RouterExplorer(new metadata_scanner_1.MetadataScanner(), this.container, this.routerProxy, this.routerExceptionsFilter, this.config);
     }
-    resolve(appInstance, basePath) {
+    resolve(appInstance) {
         const modules = this.container.getModules();
         modules.forEach(({ routes, metatype }, moduleName) => {
-            let path = metatype
+            const metaPath = metatype
                 ? Reflect.getMetadata(constants_1.MODULE_PATH, metatype)
                 : undefined;
-            path = path ? path + basePath : basePath;
-            this.registerRouters(routes, moduleName, path, appInstance);
+            const basePath = metaPath ? metaPath : '';
+            this.registerRouters(routes, moduleName, basePath, appInstance);
         });
     }
     registerRouters(routes, moduleName, basePath, appInstance) {
         routes.forEach(({ instance, metatype }) => {
-            const path = this.routerBuilder.extractRouterPath(metatype, basePath);
+            const pathParts = this.routerBuilder.extractRouterPath(metatype, basePath);
             const controllerName = metatype.name;
-            this.logger.log(messages_1.controllerMappingMessage(controllerName, path));
-            this.routerBuilder.explore(instance, metatype, moduleName, appInstance, path);
+            this.logger.log(messages_1.controllerMappingMessage(controllerName, pathParts.path));
+            this.routerBuilder.explore(instance, moduleName, appInstance, pathParts);
         });
     }
     registerNotFoundHandler() {
