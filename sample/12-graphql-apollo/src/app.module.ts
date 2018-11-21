@@ -7,7 +7,7 @@ import { CatsModule } from './cats/cats.module';
   imports: [
     CatsModule,
     GraphQLModule.forRoot({
-      typePaths: ['./**/*.graphql'],
+      typePaths: ['./src/cats/cats.graphql'],
       installSubscriptionHandlers: true,
       definitions: {
         path: join(process.cwd(), 'src/graphql.schema.ts'),

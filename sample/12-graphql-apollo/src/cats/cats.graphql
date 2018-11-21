@@ -13,19 +13,19 @@ type Subscription {
 
 type Cat {
   id: Int
-  name: String
+  name: String!
   age: Int
   owners: [Person]
 }
 
 type Person {
   id: Int
-  catId: Int
-  name: String
+  catId: Int!
+  name: String!
 }
 
 input CreateCatInput {
-  name: String
+  name: String!
   age: Int
-  owners: [String]
+  owners: [String!]!
 }

@@ -1,12 +1,12 @@
 export class CreateCatInput {
-    name?: string;
+    name: string;
     age?: number;
-    owners?: string[];
+    owners: string[];
 }
 
 export class Cat {
     id?: number;
-    name?: string;
+    name: string;
     age?: number;
     owners?: Person[];
 }
@@ -17,8 +17,8 @@ export abstract class IMutation {
 
 export class Person {
     id?: number;
-    catId?: number;
-    name?: string;
+    catId: number;
+    name: string;
 }
 
 export abstract class IQuery {
