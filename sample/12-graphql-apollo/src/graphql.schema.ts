@@ -31,4 +31,6 @@ export abstract class IQuery {
 
 export abstract class ISubscription {
     abstract catCreated(): Cat | Promise<Cat>;
+
+    abstract personCreated(): Person | Promise<Person>;
 }

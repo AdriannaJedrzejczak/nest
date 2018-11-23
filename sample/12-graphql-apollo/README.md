@@ -1,3 +1,7 @@
+# GraphQL API
+
+http://localhost:3000/graphql
+
 # Query cats
 
 ```
