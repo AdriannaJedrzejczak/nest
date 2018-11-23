@@ -1,10 +1,14 @@
 type Query {
+  "retrieve all cats"
   getCats: [Cat]
+  "retrieve a cat by its ID"
   getCat(id: ID!): Cat
 }
 
 type Mutation {
+  "store a cat with its owners"
   createCat(createCatInput: CreateCatInput): Cat
+  "define a person as coooool"
   setCool(id: ID!): Boolean
 }
 
@@ -14,6 +18,9 @@ type Subscription {
   coolChanged: Cool
 }
 
+"""
+An epic creature that will shoot fire at you if you get near it.
+"""
 type Cat {
   id: Int
   name: String!
@@ -22,6 +29,7 @@ type Cat {
   cool: Boolean
 }
 
+"People living with a cat"
 type Person {
   id: Int
   catId: Int!
