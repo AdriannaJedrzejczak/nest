@@ -1,32 +1,39 @@
 type Query {
   getCats: [Cat]
-  cat(id: ID!): Cat
+  getCat(id: ID!): Cat
 }
 
 type Mutation {
   createCat(createCatInput: CreateCatInput): Cat
+  setCool(id: ID!): Boolean
 }
 
 type Subscription {
-  catCreated: Cat
-  personCreated: Person
+  catChanged: Cat
+  personChanged: Person
+  coolChanged: Cool
 }
+
+union Cool = Cat | Person
 
 type Cat {
   id: Int
   name: String!
   age: Int
   owners: [Person]
+  cool: Boolean
 }
 
 type Person {
   id: Int
   catId: Int!
   name: String!
+  cool: Boolean
 }
 
 input CreateCatInput {
   name: String!
   age: Int
   owners: [String!]!
+  cool: Boolean
 }

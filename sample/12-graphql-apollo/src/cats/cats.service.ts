@@ -4,8 +4,8 @@ import { Cat } from '../graphql.schema';
 @Injectable()
 export class CatsService {
   private readonly cats: Cat[] = [
-    { id: 1, name: 'Cat', age: 5 },
-    { id: 2, name: 'Woody', age: 42 },
+    { id: 1, name: 'Cat', age: 5, cool: true },
+    { id: 2, name: 'Woody', age: 42, cool: false },
   ];
 
   create(cat: Cat): Cat {

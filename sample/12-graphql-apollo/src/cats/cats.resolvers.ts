@@ -1,4 +1,4 @@
-import { ParseIntPipe, UseGuards } from '@nestjs/common';
+import { ParseIntPipe } from '@nestjs/common';
 import {
   Args,
   Mutation,
@@ -8,7 +8,8 @@ import {
   ResolveProperty,
   Parent,
 } from '@nestjs/graphql';
-import { PubSub } from 'graphql-subscriptions';
+import { PubSub, withFilter } from 'graphql-subscriptions';
+
 import {
   Cat,
   IMutation,
@@ -16,7 +17,6 @@ import {
   ISubscription,
   Person,
 } from '../graphql.schema';
-import { CatsGuard } from './cats.guard';
 import { CatsService } from './cats.service';
 import { CreateCatDto } from './dto/create-cat.dto';
 import { PersonsService } from './persons.service';
@@ -31,18 +31,16 @@ export class CatsResolvers implements IMutation, IQuery, ISubscription {
   ) {}
 
   @Query()
-  @UseGuards(CatsGuard)
-  cat(
+  getCat(
     @Args('id', ParseIntPipe)
     id,
-  ): Cat | Promise<Cat> {
+  ) {
     return this.catsService.findOneById(id);
   }
 
   @Query()
-  @UseGuards(CatsGuard)
-  async getCats() {
-    return await this.catsService.findAll();
+  getCats() {
+    return this.catsService.findAll();
   }
 
   @ResolveProperty()
@@ -50,11 +48,13 @@ export class CatsResolvers implements IMutation, IQuery, ISubscription {
     return this.personsService.findByCatId(catId);
   }
 
-  @Mutation('createCat')
-  async createCat(
-    @Args('createCatInput') createCatDto: CreateCatDto,
-  ): Promise<Cat> {
-    const cat = { name: createCatDto.name, age: createCatDto.age };
+  @Mutation()
+  async createCat(@Args('createCatInput') createCatDto: CreateCatDto) {
+    const cat = {
+      name: createCatDto.name,
+      age: createCatDto.age,
+      cool: createCatDto.cool,
+    };
     const catCreated = await this.catsService.create(cat);
 
     const persons = createCatDto.owners.map(ownerName =>
@@ -66,29 +66,69 @@ export class CatsResolvers implements IMutation, IQuery, ISubscription {
     return catCreated;
   }
 
-  publishCreations(catCreated: Cat, persons: Person[]): any {
-    persons.forEach(personCreated =>
-      pubSub.publish('person_created', { personCreated }),
+  @Mutation()
+  setCool(
+    @Args('id', ParseIntPipe)
+    id,
+  ) {
+    const person = this.personsService.setCool(id);
+    pubSub.publish('person_changed', {
+      personChanged: person,
+      coolChanged: person,
+    });
+    return !!person;
+  }
+
+  publishCreations(cat: Cat, persons: Person[]): any {
+    persons.forEach(person =>
+      pubSub.publish('person_changed', {
+        personChanged: person,
+        coolChanged: person,
+      }),
     );
-    pubSub.publish('cat_created', { catCreated });
+    pubSub.publish('cat_changed', {
+      catChanged: cat,
+      coolChanged: cat,
+    });
   }
 
   @Subscription()
-  catCreated(): any {
+  catChanged(): any {
     return {
-      subscribe: () => pubSub.asyncIterator('cat_created'),
+      subscribe: () => pubSub.asyncIterator('cat_changed'),
     };
   }
 
   @Subscription()
-  personCreated(): any {
+  personChanged(): any {
     return {
-      subscribe: () => pubSub.asyncIterator('person_created'),
+      subscribe: () => pubSub.asyncIterator('person_changed'),
+    };
+  }
+
+  @Subscription()
+  coolChanged(): any {
+    return {
+      subscribe: withFilter(
+        () => pubSub.asyncIterator(['cat_changed', 'person_changed']),
+        payload => payload.coolChanged.cool === true,
+      ),
     };
   }
 
   // weird temporary hack @see https://github.com/nestjs/graphql/blob/master/lib/graphql-types.loader.ts
   temp__(): boolean | Promise<boolean> {
     throw new Error('Method not implemented.');
+  }
+}
+
+@Resolver('Cool')
+export class CoolResolver {
+  @ResolveProperty()
+  __resolveType(obj) {
+    if (obj.age) {
+      return 'Cat';
+    }
+    return 'Person';
   }
 }
