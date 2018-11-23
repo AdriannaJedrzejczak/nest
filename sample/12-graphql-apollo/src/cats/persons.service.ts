@@ -4,9 +4,9 @@ import { Person } from '../graphql.schema';
 @Injectable()
 export class PersonsService {
   private readonly persons: Person[] = [
-    { id: 1, catId: 1, name: 'Roberto', cool: false },
-    { id: 2, catId: 2, name: 'Cyril', cool: false },
-    { id: 3, catId: 2, name: 'Magalie', cool: true },
+    { id: 1, catId: 1, name: 'Gargamel', cool: false },
+    { id: 2, catId: 2, name: 'Gepetto', cool: false },
+    { id: 3, catId: 2, name: 'Pinocchio', cool: true },
   ];
 
   create(person: Person): Person {

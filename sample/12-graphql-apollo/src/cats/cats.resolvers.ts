@@ -33,29 +33,29 @@ export class CatsResolvers implements IMutation, IQuery, ISubscription {
   @Query()
   getCat(
     @Args('id', ParseIntPipe)
-    id,
-  ) {
-    return this.catsService.findOneById(id);
+    id: string,
+  ): Cat {
+    return this.catsService.findOneById(+id);
   }
 
   @Query()
-  getCats() {
+  getCats(): Cat[] {
     return this.catsService.findAll();
   }
 
   @ResolveProperty()
-  owners(@Parent() { id: catId }) {
+  owners(@Parent() { id: catId }: Cat): Person[] {
     return this.personsService.findByCatId(catId);
   }
 
   @Mutation()
-  async createCat(@Args('createCatInput') createCatDto: CreateCatDto) {
+  createCat(@Args('createCatInput') createCatDto: CreateCatDto): Cat {
     const cat = {
       name: createCatDto.name,
       age: createCatDto.age,
       cool: createCatDto.cool,
     };
-    const catCreated = await this.catsService.create(cat);
+    const catCreated = this.catsService.create(cat);
 
     const persons = createCatDto.owners.map(ownerName =>
       this.personsService.create({ catId: catCreated.id, name: ownerName }),
@@ -69,9 +69,9 @@ export class CatsResolvers implements IMutation, IQuery, ISubscription {
   @Mutation()
   setCool(
     @Args('id', ParseIntPipe)
-    id,
-  ) {
-    const person = this.personsService.setCool(id);
+    id: string,
+  ): boolean {
+    const person = this.personsService.setCool(+id);
     pubSub.publish('person_changed', {
       personChanged: person,
       coolChanged: person,
@@ -79,7 +79,7 @@ export class CatsResolvers implements IMutation, IQuery, ISubscription {
     return !!person;
   }
 
-  publishCreations(cat: Cat, persons: Person[]): any {
+  publishCreations(cat: Cat, persons: Person[]): void {
     persons.forEach(person =>
       pubSub.publish('person_changed', {
         personChanged: person,
@@ -125,7 +125,7 @@ export class CatsResolvers implements IMutation, IQuery, ISubscription {
 @Resolver('Cool')
 export class CoolResolver {
   @ResolveProperty()
-  __resolveType(obj) {
+  __resolveType(obj): string {
     if (obj.age) {
       return 'Cat';
     }

@@ -2,6 +2,23 @@
 
 http://localhost:3000/graphql
 
+# Query cat
+
+```
+{
+  getCat(id: "1") {
+    id
+    name
+    cool
+    owners {
+      name
+      id
+      cool
+    }
+  }
+}
+```
+
 # Query cats
 
 ```
@@ -9,9 +26,11 @@ http://localhost:3000/graphql
   getCats {
     id
     name
+    cool
     owners {
       name
       id
+      cool
     }
   }
 }
@@ -23,14 +42,16 @@ http://localhost:3000/graphql
 mutation {
   createCat(
     createCatInput: {
-      name: "Duvel"
-      age: 1000
-      owners: ["Cyril"]
+      name:"Garfield"
+      age: 42
+      owners: ["Jon", "Odie"]
+      cool: true
     }
   ) {
     id
     name
     age
+    cool
     owners {
       name
       id
@@ -39,13 +60,36 @@ mutation {
 }
 ```
 
+# Mutate to cool
+
+```
+mutation {
+  setCool(id: "2")
+}
+```
+
 # Subscribe to cat's creations
 
 ```
 subscription {
-  catCreated {
+  catChanged {
     name
     age
+    cool
+  }
+}
+
+subscription {
+  personChanged {
+    name
+    cool
+  }
+}
+
+subscription {
+   coolChanged{
+    ... on Cat {name cool}
+    ... on Person {name cool}
   }
 }
 ```
